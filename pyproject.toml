@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Prives"
+version = "0.1.0"
+description = "A tool for testing access control vulnerabilities and authorization bypasses."
+authors = [
+    { name = "0nely" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+]
+
+[project.scripts]
+prives = "prives.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["prives*"]
+
+[tool.setuptools.package-data]
+"prives.db" = ["sensitive_keys.txt"]
