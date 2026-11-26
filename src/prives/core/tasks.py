@@ -10,12 +10,12 @@ from prives.generators.user_agents import build_user_agents
 
 
 GENERATORS = {
+    "Header Override": lambda url: build_override(url),
     "IDOR": lambda url: build_idor(url),
     "Path Manipulation": lambda url: build_paths(url),
     "Param": lambda url: build_params(url),
     "API Version": lambda url: build_api_version(url),
     "Forwarded": lambda url: build_forwarded(),
-    "Header Override": lambda url: build_override(url),
     "User-Agent": lambda url: build_user_agents(),
 }
 

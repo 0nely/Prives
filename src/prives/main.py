@@ -40,9 +40,13 @@ Purpose: Allows prives to identify the target user ID and perform IDOR/BOLA acce
     input_group.add_argument("-u", "--url", metavar="", type=str, required=True, help="Target URL to test")
     input_group.add_argument("-H", "--header", metavar="", action="append", help="Custom HTTP header (e.g. -H 'User-Agent: prives'). Can be specified multiple times")
     input_group.add_argument("-C", "--cookie", metavar="", action="append", help="Custom cookie (e.g. -C 'session=abc123'). Can be specified multiple times")
-    input_group.add_argument("-fR", "--follow-redirects", action="store_true", help="Follow HTTP redirects (default: disabled)")
     input_group.add_argument("-sI", "--second-identifier", metavar="", type=str, help="Provide a second identifier for IDOR testing")
     input_group.add_argument("--timeout", metavar="", type=float, default=10, help="Request timeout in seconds (default: 10)")
+
+    performance_group = parser.add_argument_group(f"{colors['yellow']}Performance{colors['reset']}")
+    performance_group.add_argument("-t", "--threads", metavar="", type=int, default=1, help="Number of concurrent threads (default: 1)")
+    performance_group.add_argument("--rate", metavar="", type=int, default=1, help="Maximum requests per second (default: 1)")
+    performance_group.add_argument("--delay", metavar="", type=float, default=0.02, help="Delay between requests in seconds (default: 0.02)")
 
     output_group = parser.add_argument_group(f"{colors['yellow']}Output{colors['reset']}")
     output_group.add_argument("-o", "--output", metavar="", type=str, help="Output file path (currently only JSON is supported)")
@@ -115,6 +119,12 @@ def main():
                 "json": args.get("json"),
                 "timeout": args["timeout"],},
 
+            "performance": {
+                "threads": args["threads"],
+                "rate": args["rate"],
+                "delay": args["delay"]
+            },
+
             "config": {
                 "target_id": request.get("target_id"),
                 "second_id": args.get("second_identifier"),}}
@@ -124,7 +134,7 @@ def main():
 
         input(f"{colors['yellow']}[?] Ready to start scanning? Press Enter to continue...{colors['reset']}")
 
-        findings = start_scanner(context["request"], tasks)
+        findings = start_scanner(context["request"], tasks, context["performance"])
 
         if args["output"]:
             report(findings, args["output"])
