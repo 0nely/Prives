@@ -1,6 +1,8 @@
 import argparse
 import sys
 import re
+import requests
+from packaging.version import Version
 
 from prives.core.colors import colors
 from prives import __version__
@@ -37,22 +39,23 @@ Purpose: Allows prives to identify the target user ID and perform IDOR/BOLA acce
         )
 
     input_group = parser.add_argument_group(f"{colors['yellow']}Input{colors['reset']}")
-    input_group.add_argument("-u", "--url", metavar="", type=str, required=True, help="Target URL to test")
+    input_group.add_argument("-u", "--url", metavar="", type=str, help="Target URL to test")
     input_group.add_argument("-H", "--header", metavar="", action="append", help="Custom HTTP header (e.g. -H 'User-Agent: prives'). Can be specified multiple times")
     input_group.add_argument("-C", "--cookie", metavar="", action="append", help="Custom cookie (e.g. -C 'session=abc123'). Can be specified multiple times")
     input_group.add_argument("-sI", "--second-identifier", metavar="", type=str, help="Provide a second identifier for IDOR testing")
-    input_group.add_argument("--timeout", metavar="", type=float, default=10, help="Request timeout in seconds (default: 10)")
 
     performance_group = parser.add_argument_group(f"{colors['yellow']}Performance{colors['reset']}")
     performance_group.add_argument("-t", "--threads", metavar="", type=int, default=1, help="Number of concurrent threads (default: 1)")
     performance_group.add_argument("--rate", metavar="", type=int, default=1, help="Maximum requests per second (default: 1)")
     performance_group.add_argument("--delay", metavar="", type=float, default=0.02, help="Delay between requests in seconds (default: 0.02)")
+    performance_group.add_argument("--timeout", metavar="", type=float, default=10, help="Request timeout in seconds (default: 10)")
 
     output_group = parser.add_argument_group(f"{colors['yellow']}Output{colors['reset']}")
     output_group.add_argument("-o", "--output", metavar="", type=str, help="Output file path (currently only JSON is supported)")
 
     misc_group = parser.add_argument_group(f"{colors['yellow']}Misc{colors['reset']}")
     misc_group.add_argument("--help", action="help", help="Show this help options")
+    misc_group.add_argument("--version", action="store_true", help="Show version")
     
 
     if len(sys.argv) == 1:
@@ -61,6 +64,23 @@ Purpose: Allows prives to identify the target user ID and perform IDOR/BOLA acce
 
     args = vars(parser.parse_args())
     return args
+
+
+def show_version():
+    try:
+        r = requests.get("https://pypi.org/pypi/Prives/json", timeout=5)
+        r.raise_for_status()
+        latest = r.json()["info"]["version"]
+
+        if Version(latest) > Version(__version__):
+            print(f"{colors["red"]}[!] Your version is outdated. Please update to {latest}{colors["reset"]}")
+            print(f"{colors["yellow"]}# pip{colors["reset"]}\n`pip install --upgrade prives`\n")
+            print(f"{colors["yellow"]}# pipx{colors["reset"]}\n`pipx upgrade prives`")
+        else:
+            print(f"{colors["green"]}[+] Prives {__version__} is up to date.{colors["reset"]}")
+
+    except (requests.RequestException, ValueError, KeyError) as error:
+        print(f"Unable to check for updates: {error}")
 
 
 def parse_headers(values):
@@ -90,6 +110,11 @@ def main():
     try:
         print(banner())
         args = build_parser()
+
+        if args["version"]:
+            show_version()
+            return
+
         url = args["url"]
 
         match = re.search(r"\{prives-([^}]+)\}", url)
@@ -103,7 +128,7 @@ def main():
         # request: {"url": url, "target_id": target_id, "status": "parsed"}
 
         print(f"{colors["yellow"]}[+] Target: {colors["reset"]}{request['url']}")
-        print(f"{colors["yellow"]}[+] Target ID: {colors["reset"]}{request['target_id'] or 'Unknown (not provided). Use {{prives-xxx}} to specify a target ID. This is not an error; scanning can continue, but some features may be limited.'}")
+        print(f"{colors["yellow"]}[+] Target ID: {colors["reset"]}{request['target_id'] or 'Unknown (not provided). Use `{prives-xxx}` to specify a target ID. This is not an error; scanning can continue, but some features may be limited.'}")
         print(f"{colors['yellow']}[+] Second ID: {colors['reset']}{args['second_identifier'] or 'Not provided'}")
 
         headers = parse_headers(args["header"])

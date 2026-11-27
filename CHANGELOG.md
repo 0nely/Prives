@@ -24,3 +24,13 @@ Initial release.
 - Request rate limiting
 - Configurable request delay
 - Multi-threaded request execution
+
+## v0.2.1 - 2026-11-27
+
+**Fixed**
+
+- Moved the `--timeout` flag to the appropriate argument group.
+
+**Added**
+
+- Added the `--version` flag to check for the latest PyPI release.
